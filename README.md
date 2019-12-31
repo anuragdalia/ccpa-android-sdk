@@ -33,7 +33,7 @@ and then add this dependency
 ```gradle
 dependencies {
     ...
-    implementation 'com.github.anuragdalia:ccpa-android-sdk:Tag'
+    implementation 'com.github.anuragdalia:ccpa-android-sdk:0.0.1'
   }
 ```
 
