@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="DNSMPI">
+        <attr name="dnsmpi_custom_layout" format="reference" />
+        <attr name="dnsmpi_link_color" format="color" />
+        <attr name="dnsmpi_two_states" format="boolean" />
+        <attr name="dnsmpi_state_a_text" format="string" />
+        <attr name="dnsmpi_state_b_text" format="string" />
+        <attr name="dnsmpi_ask_geo_permission" format="boolean" />
+    </declare-styleable>
+</resources>
