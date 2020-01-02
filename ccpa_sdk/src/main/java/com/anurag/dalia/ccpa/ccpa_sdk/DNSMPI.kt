@@ -1,23 +1,20 @@
 package com.anurag.dalia.ccpa.ccpa_sdk
 
-import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.ContextWrapper
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.util.AttributeSet
 import android.view.View
 import android.widget.FrameLayout
-import android.widget.Toast
-import android.widget.Toast.LENGTH_LONG
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.appcompat.widget.LinearLayoutCompat
 import androidx.core.content.edit
 import com.anurag.dalia.ccpa.ccpa_sdk.Utils.getCountry
+import java.lang.ref.WeakReference
 
 
 class DNSMPI @JvmOverloads constructor(
@@ -27,22 +24,51 @@ class DNSMPI @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
     companion object {
-        private const val SharedPrefKey = "ccpa_sell_data"
-        private var mCanSellData: Boolean? = null
-        private var view: DNSMPI? = null
+        private const val ccpaSellDataKey = "ccpa_sell_data"
+        private const val isCaliforniaOrUnknownKey = "is_california_or_unknown"
+
+        private var testingFlag = 0
+        private var isTesting = false
+
+        private var views = ArrayList<WeakReference<DNSMPI>>()
         private fun getSharedPrefs(context: Context): SharedPreferences = context.getSharedPreferences("ccpa_sdk_27863", MODE_PRIVATE)
 
-        fun canSellData(context: Context): Boolean {
-            if (mCanSellData == null)
-                mCanSellData = getSharedPrefs(context).getBoolean(SharedPrefKey, true)
 
-            return mCanSellData as Boolean
+        fun enableTesting(enable: Boolean) = run {
+            isTesting = enable
+            views.forEach { it.get()?.addLink(false) }
         }
+
+        fun forceInCalifornia() = run {
+            testingFlag = 1
+            views.forEach { it.get()?.addLink(false) }
+        }
+
+        fun forceUnknown() = run {
+            testingFlag = 0
+            views.forEach { it.get()?.addLink(false) }
+        }
+
+        fun forceOutsideCalifornia() = run {
+            testingFlag = 2
+            views.forEach { it.get()?.addLink(false) }
+        }
+
+        fun isCaliforniaOrUnknown(context: Context): Boolean = getSharedPrefs(context).getBoolean(isCaliforniaOrUnknownKey, true)
+
+        fun canSellData(context: Context): Boolean = getSharedPrefs(context).getBoolean(ccpaSellDataKey, true)
 
         fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
             if (requestCode == 333) {
-                view?.addLink(false)
+                views.forEach { it.get()?.addLink(false) }
             }
+        }
+
+        fun updateActivitySharedPref(activity: Activity) {
+            val sharedPref: SharedPreferences = activity.getPreferences(MODE_PRIVATE)
+            val editor = sharedPref.edit()
+            editor.putInt("gad_rdp", if (canSellData(activity)) 1 else 0)
+            editor.apply()
         }
     }
 
@@ -65,7 +91,7 @@ class DNSMPI @JvmOverloads constructor(
 
         addLink(dnsmpiAskGeoPermission)
 
-        view = this
+        views.add(WeakReference(this))
     }
 
     fun addLink(askPerms: Boolean) {
@@ -79,7 +105,20 @@ class DNSMPI @JvmOverloads constructor(
         val country = getCountry(activity, askPerms)
 
         removeAllViews()
-        if (country == null || country.contains("california", true))
+        val countryIsCaliforniaOrUnknown =
+            when (isTesting) {
+                true -> when (testingFlag) {
+                    0 -> true
+                    1 -> true
+                    2 -> false
+                    else -> false
+                }
+                false -> country == null || country.contains("california", true)
+            }
+
+        getSharedPrefs(context).edit(true) { putBoolean(isCaliforniaOrUnknownKey, countryIsCaliforniaOrUnknown) }
+
+        if (countryIsCaliforniaOrUnknown)
             addView(mDNSMPILink, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
     }
 
@@ -143,7 +182,6 @@ class DNSMPI @JvmOverloads constructor(
     }
 
     private fun setPref(context: Context, b: Boolean) {
-        mCanSellData = b
-        getSharedPrefs(context).edit { putBoolean(SharedPrefKey, b) }
+        getSharedPrefs(context).edit(true) { putBoolean(ccpaSellDataKey, b) }
     }
 }
