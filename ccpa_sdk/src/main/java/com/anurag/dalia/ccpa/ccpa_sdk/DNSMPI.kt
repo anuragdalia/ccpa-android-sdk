@@ -65,10 +65,9 @@ class DNSMPI @JvmOverloads constructor(
         }
 
         fun updateActivitySharedPref(activity: Activity) {
+            if (canSellData(activity)) return
             val sharedPref: SharedPreferences = activity.getPreferences(MODE_PRIVATE)
-            val editor = sharedPref.edit()
-            editor.putInt("gad_rdp", if (canSellData(activity)) 1 else 0)
-            editor.apply()
+            sharedPref.edit { putInt("gad_rdp", 1) }
         }
     }
 
