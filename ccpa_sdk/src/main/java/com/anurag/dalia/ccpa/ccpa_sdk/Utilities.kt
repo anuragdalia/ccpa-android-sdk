@@ -18,31 +18,35 @@ object Utils {
 
     @SuppressLint("MissingPermission")
     fun getCountry(context: Activity?, askPerms: Boolean): String? {
-        val country: String?
-        if (context == null) return null
+        try {
+            val country: String?
+            if (context == null) return null
 
-        val hasPermCoarseLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-        val hasPermFineLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+            val hasPermCoarseLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+            val hasPermFineLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
 
-        if (PackageManager.PERMISSION_GRANTED == hasPermCoarseLocation && PackageManager.PERMISSION_GRANTED == hasPermFineLocation) {
-            val locationManager: LocationManager? = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            if (locationManager != null) {
-                var location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                if (location == null)
-                    location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                if (location != null) {
-                    val gcd = Geocoder(context, Locale.getDefault())
-                    val addresses: List<Address>?
-                    addresses = gcd.getFromLocation(location.latitude, location.longitude, 1)
-                    if (addresses != null && addresses.isNotEmpty()) {
-                        country = "${addresses[0].adminArea} ${addresses[0].countryName}"
-                        return country
+            if (PackageManager.PERMISSION_GRANTED == hasPermCoarseLocation && PackageManager.PERMISSION_GRANTED == hasPermFineLocation) {
+                val locationManager: LocationManager? = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                if (locationManager != null) {
+                    var location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                    if (location == null)
+                        location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                    if (location != null) {
+                        val gcd = Geocoder(context, Locale.getDefault())
+                        val addresses: List<Address>?
+                        addresses = gcd.getFromLocation(location.latitude, location.longitude, 1)
+                        if (addresses != null && addresses.isNotEmpty()) {
+                            country = "${addresses[0].adminArea} ${addresses[0].countryName}"
+                            return country
+                        }
                     }
                 }
+            } else {
+                if (askPerms)
+                    ActivityCompat.requestPermissions(context, PERMISSIONS, 333)
             }
-        } else {
-            if (askPerms)
-                ActivityCompat.requestPermissions(context, PERMISSIONS, 333)
+        } catch (e: Exception) {
+            return null
         }
         return null
     }
