@@ -7,6 +7,7 @@ import android.content.ContextWrapper
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
@@ -21,7 +22,7 @@ class DNSMPI @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : FrameLayout(context, attrs, defStyleAttr) {
+) : FrameLayout(context, attrs, defStyleAttr), OnCountryFiguredOutListener {
 
     companion object {
         private const val ccpaSellDataKey = "ccpa_sell_data"
@@ -36,22 +37,22 @@ class DNSMPI @JvmOverloads constructor(
 
         fun enableTesting(enable: Boolean) = run {
             isTesting = enable
-            views.forEach { it.get()?.addLink(false) }
+            views.forEach { it.get()?.addLink(false, false) }
         }
 
         fun forceInCalifornia() = run {
             testingFlag = 1
-            views.forEach { it.get()?.addLink(false) }
+            views.forEach { it.get()?.addLink(false, false) }
         }
 
         fun forceUnknown() = run {
             testingFlag = 0
-            views.forEach { it.get()?.addLink(false) }
+            views.forEach { it.get()?.addLink(false, false) }
         }
 
         fun forceOutsideCalifornia() = run {
             testingFlag = 2
-            views.forEach { it.get()?.addLink(false) }
+            views.forEach { it.get()?.addLink(false, false) }
         }
 
         fun isCaliforniaOrUnknown(context: Context): Boolean = getSharedPrefs(context).getBoolean(isCaliforniaOrUnknownKey, true)
@@ -60,7 +61,7 @@ class DNSMPI @JvmOverloads constructor(
 
         fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
             if (requestCode == 333) {
-                views.forEach { it.get()?.addLink(false) }
+                views.forEach { it.get()?.addLink(false, false) }
             }
         }
 
@@ -75,6 +76,7 @@ class DNSMPI @JvmOverloads constructor(
     private val dnsmpiLinkColor: Int
     private val dnsmpiTwoStates: Boolean
     private val dnsmpiAskGeoPermission: Boolean
+    private val dnsmpiGetLocationFromNet: Boolean
     private val dnsmpiStateAText: String
     private val dnsmpiStateBText: String
 
@@ -86,23 +88,22 @@ class DNSMPI @JvmOverloads constructor(
         dnsmpiAskGeoPermission = a.getBoolean(R.styleable.DNSMPI_dnsmpi_ask_geo_permission, true)
         dnsmpiStateAText = a.getString(R.styleable.DNSMPI_dnsmpi_state_a_text) ?: "Are you from California?"
         dnsmpiStateBText = a.getString(R.styleable.DNSMPI_dnsmpi_state_b_text) ?: "To show you personalised advertisements. We share your data with Advertisers in exchange for some money to be able to provide this app for free. Are you okay with this?"
+        dnsmpiGetLocationFromNet = a.getBoolean(R.styleable.DNSMPI_dnsmpi_get_location_internet, true)
+
         a.recycle()
 
-        addLink(dnsmpiAskGeoPermission)
+        addLink(dnsmpiAskGeoPermission, dnsmpiGetLocationFromNet)
 
         views.add(WeakReference(this))
     }
 
-    fun addLink(askPerms: Boolean) {
+    private fun addLinkActual(country: String?) {
         val mDNSMPILink = AppCompatTextView(context).apply {
             text = "Do not sell my personal information"
             textSize = 12f
             setTextColor(dnsmpiLinkColor)
             setOnClickListener(this@DNSMPI::onLinkClicked)
         }
-        val activity = getActivity()
-        val country = getCountry(activity, askPerms)
-
         removeAllViews()
         val countryIsCaliforniaOrUnknown =
             when (isTesting) {
@@ -115,10 +116,23 @@ class DNSMPI @JvmOverloads constructor(
                 false -> country == null || country.contains("california", true)
             }
 
+        Log.d("Loki", "is cali? $countryIsCaliforniaOrUnknown")
+
         getSharedPrefs(context).edit(true) { putBoolean(isCaliforniaOrUnknownKey, countryIsCaliforniaOrUnknown) }
 
         if (countryIsCaliforniaOrUnknown)
             addView(mDNSMPILink, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
+
+    }
+
+    fun addLink(askPerms: Boolean, tryInternet: Boolean) {
+        val activity = getActivity()
+
+        if (askPerms)
+            addLinkActual(getCountry(activity, askPerms))
+
+        if (tryInternet)
+            DetermineLocation(this).execute()
     }
 
     private fun onLinkClicked(v: View) {
@@ -182,5 +196,13 @@ class DNSMPI @JvmOverloads constructor(
 
     private fun setPref(context: Context, b: Boolean) {
         getSharedPrefs(context).edit(true) { putBoolean(ccpaSellDataKey, b) }
+    }
+
+    override fun onCountryFiguredOut(country: String?) {
+        addLinkActual(country)
+    }
+
+    override fun onError() {
+        addLinkActual(null)
     }
 }

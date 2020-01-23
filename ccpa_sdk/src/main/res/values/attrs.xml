@@ -7,5 +7,6 @@
         <attr name="dnsmpi_state_a_text" format="string" />
         <attr name="dnsmpi_state_b_text" format="string" />
         <attr name="dnsmpi_ask_geo_permission" format="boolean" />
+        <attr name="dnsmpi_get_location_internet" format="boolean" />
     </declare-styleable>
 </resources>

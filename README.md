@@ -33,7 +33,7 @@ and then add this dependency
 ```gradle
 dependencies {
     ...
-    implementation 'com.github.anuragdalia:ccpa-android-sdk:0.0.1'
+    implementation 'com.github.anuragdalia:ccpa-android-sdk:0.0.8'
   }
 ```
 
@@ -52,6 +52,7 @@ view configuration attributes and their formats are listed below
 * dnsmpi_state_a_text : string
 * dnsmpi_state_b_text : string
 * dnsmpi_ask_geo_permission : boolean
+* dnsmpi_get_location_internet: boolean
 
 if you enable dnsmpi_ask_geo_permission
 add this to the activity
@@ -62,12 +63,17 @@ add this to the activity
     }
 ```
 
+use only one of these otherwise it will use both the methods and the method that responds last is the decider
+<br />
+*dnsmpi_ask_geo_permission* and *dnsmpi_get_location_internet*
+
 At any point to know the preference just call
 ```kotlin
-DNSMPI.canSellData(context) : Boolean
+DNSMPI.canSellData(context) //returns Boolean
 ```
 
 //PS ignore the fuck-all readme writing it at 4am and in a hurry :P
+<br />
 //PPS havent even check properly if its working perfectly fine
 
 ### Feel free to raise a PR
