@@ -98,13 +98,6 @@ class DNSMPI @JvmOverloads constructor(
     }
 
     private fun addLinkActual(country: String?) {
-        val mDNSMPILink = AppCompatTextView(context).apply {
-            text = "Do not sell my personal information"
-            textSize = 12f
-            setTextColor(dnsmpiLinkColor)
-            setOnClickListener(this@DNSMPI::onLinkClicked)
-        }
-        removeAllViews()
         val countryIsCaliforniaOrUnknown =
             when (isTesting) {
                 true -> when (testingFlag) {
@@ -116,12 +109,18 @@ class DNSMPI @JvmOverloads constructor(
                 false -> country == null || country.contains("california", true)
             }
 
-        Log.d("Loki", "is cali? $countryIsCaliforniaOrUnknown")
-
         getSharedPrefs(context).edit(true) { putBoolean(isCaliforniaOrUnknownKey, countryIsCaliforniaOrUnknown) }
-
-        if (countryIsCaliforniaOrUnknown)
-            addView(mDNSMPILink, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
+        post {
+            val mDNSMPILink = AppCompatTextView(context).apply {
+                text = "Do not sell my personal information"
+                textSize = 12f
+                setTextColor(dnsmpiLinkColor)
+                setOnClickListener(this@DNSMPI::onLinkClicked)
+            }
+            removeAllViews()
+            if (countryIsCaliforniaOrUnknown)
+                addView(mDNSMPILink, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
+        }
 
     }
 
