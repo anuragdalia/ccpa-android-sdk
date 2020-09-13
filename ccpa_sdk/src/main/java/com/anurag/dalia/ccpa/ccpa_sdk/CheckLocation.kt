@@ -53,8 +53,3 @@ class DetermineLocation(private val onCountryFiguredOutListener: OnCountryFigure
         onCountryFiguredOutListener.onCountryFiguredOut(s)
     }
 }
-
-interface OnCountryFiguredOutListener {
-    fun onCountryFiguredOut(country: String?)
-    fun onError()
-}
