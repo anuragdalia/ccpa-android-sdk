@@ -20,7 +20,15 @@ allprojects {
     repositories {
         google()
         jcenter()
-        
+    }
+    
+   ext {
+       kotlin_version = '1.4.10'
+       supportLibraryVersion = '27.1.1'
+       buildToolsVersion = '27.0.3'
+       compileSdkVersion = 27
+       minSdkVersion = 14
+       targetSdkVersion = 27
     }
 }
 
